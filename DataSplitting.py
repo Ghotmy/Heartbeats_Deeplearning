@@ -21,7 +21,7 @@ if __name__ == "__main__":
     TotalCSV = pd.concat([pd.read_csv(SET_A_CSV), pd.read_csv(SET_B_CSV)], ignore_index=True)
     ###Drop unlabeled and artifact and noisy data:
     TotalCSV = TotalCSV[(TotalCSV.label.notnull()) & (TotalCSV.label != "artifact") & TotalCSV.sublabel.isnull()]
-    TotalCSV['label'] = TotalCSV['label'].replace(['normal', 'murmur', 'extrahls', 'extrastole'], [0, 1, 2, 3])
+    TotalCSV['label'] = TotalCSV['label'].replace(["normal", "murmur", "extrahls", "extrastole"], [0, 1, 2, 3])
     ###Random mix the data:
     TotalCSV = TotalCSV.sample(frac=1).reset_index(drop=True)
 

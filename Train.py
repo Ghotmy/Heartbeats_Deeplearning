@@ -5,10 +5,11 @@ from torch.utils.data import DataLoader
 from HeartDataset import HeartDataset
 import pandas as pd
 from CNN import CNNNetwork
+from FNN import FNNNetwork
 
 BATCH_SIZE = 128
-EPOCHS = 500
-LEARNING_RATE = 0.005
+EPOCHS = 100
+LEARNING_RATE = 0.001
 SAMPLE_RATE = 22050
 NUM_SAMPLES = 220500
 
@@ -48,17 +49,21 @@ def train(model, data_loader, loss_fn, optimiser, device, epochs):
 
 
 if __name__ == "__main__":
+
+    print("Train:\n1-FNN\n2-CNN\nChoose:")
+    network_type = int(input())
+
     if torch.cuda.is_available():
         device = "cuda"
     else:
         device = "cpu"
     print(f"Using {device}")
 
-    # TotalCSV = pd.read_csv(SET_A_CSV)
+    TotalCSV = pd.read_csv("train.csv")
     # TotalCSV = TotalCSV[(TotalCSV.label.notnull()) & (TotalCSV.label != "artifact")]
     # TotalCSV['label'] = TotalCSV['label'].replace(['normal', 'murmur', 'extrahls'], [0, 1, 2])
     # TotalCSV = TotalCSV.sample(frac=1).reset_index(drop=True)
-    # print(TotalCSV.to_string())
+    print(TotalCSV.to_string())
 
     # instantiating our dataset object and create data loader
     mel_spectrogram = torchaudio.transforms.MelSpectrogram(
@@ -68,7 +73,7 @@ if __name__ == "__main__":
         n_mels=64
     )
 
-    h_data = HeartDataset(pd.read_csv('train.csv'),
+    h_data = HeartDataset(TotalCSV,
                           DATA_DIR,
                           mel_spectrogram,
                           SAMPLE_RATE,
@@ -77,18 +82,17 @@ if __name__ == "__main__":
 
     train_dataloader = create_data_loader(h_data, BATCH_SIZE)
 
-    # construct model and assign it to device
-
-    cnn = CNNNetwork().to(device)
-    print(cnn)
-
-    # initialise loss funtion + optimiser
     loss_fn = nn.CrossEntropyLoss()
-    optimiser = torch.optim.Adam(cnn.parameters(), lr=LEARNING_RATE)
 
-    # train model
-    train(cnn, train_dataloader, loss_fn, optimiser, device, EPOCHS)
-
-    # save model
-    torch.save(cnn.state_dict(), "cnn.pth")
-    print("Trained CNN saved at cnn.pth")
+    if network_type == 1:
+        fnn = FNNNetwork(1 * 64 * 431, 256*2, 4).to(device)
+        optimiser = torch.optim.Adam(fnn.parameters(), lr=LEARNING_RATE)
+        train(fnn, train_dataloader, loss_fn, optimiser, device, EPOCHS)
+        torch.save(fnn.state_dict(), "fnn.pth")
+        print("Trained FNN saved at fnn.pth")
+    else:
+        cnn = CNNNetwork().to(device)
+        optimiser = torch.optim.Adam(cnn.parameters(), lr=LEARNING_RATE)
+        train(cnn, train_dataloader, loss_fn, optimiser, device, EPOCHS)
+        torch.save(cnn.state_dict(), "cnn.pth")
+        print("Trained CNN saved at cnn.pth")
