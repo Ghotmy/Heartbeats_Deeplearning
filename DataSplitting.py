@@ -1,55 +1,55 @@
-import torch
 import torchaudio
 from HeartDataset import HeartDataset
 import pandas as pd
+import numpy as np
+from Train import DATA_DIR, SAMPLE_RATE, NUM_SAMPLES
 
-if __name__ == "__main__":
-    SET_A_CSV = "/home/ghotmy/College/patterns/heart_beat_DeepLearning/heart-beat-dataset/set_a.csv"
-    SET_B_CSV = "/home/ghotmy/College/patterns/heart_beat_DeepLearning/heart-beat-dataset/set_b.csv"
-    DATA_DIR = "/home/ghotmy/College/patterns/heart_beat_DeepLearning/heart-beat-dataset"
-    SAMPLE_RATE = 22050
-    NUM_SAMPLES = 220500
+SET_A_CSV = "/home/ghotmy/College/patterns/heart_beat_DeepLearning/heart-beat-dataset/set_a.csv"
+SET_B_CSV = "/home/ghotmy/College/patterns/heart_beat_DeepLearning/heart-beat-dataset/set_b.csv"
 
-    if torch.cuda.is_available():
-        device = "cuda"
-    else:
-        device = "cpu"
-    print(f"Using device {device}")
+##Combine CSV files:
+TotalCSV = pd.concat([pd.read_csv(SET_A_CSV), pd.read_csv(SET_B_CSV)], ignore_index=True)
+normal = TotalCSV[(TotalCSV['label'] == 'normal') & TotalCSV.sublabel.isnull()]
+murmur = TotalCSV[(TotalCSV['label'] == 'murmur') & TotalCSV.sublabel.isnull()]
+extrahls = TotalCSV[(TotalCSV['label'] == 'extrahls') & TotalCSV.sublabel.isnull()]
+extrastole = TotalCSV[(TotalCSV['label'] == 'extrastole') & TotalCSV.sublabel.isnull()]
 
-    ##Combine CSV files:
-    # TotalCSV = pd.read_csv(SET_A_CSV)
-    TotalCSV = pd.concat([pd.read_csv(SET_A_CSV), pd.read_csv(SET_B_CSV)], ignore_index=True)
-    ###Drop unlabeled and artifact and noisy data:
-    TotalCSV = TotalCSV[(TotalCSV.label.notnull()) & (TotalCSV.label != "artifact") & TotalCSV.sublabel.isnull()]
-    TotalCSV['label'] = TotalCSV['label'].replace(["normal", "murmur", "extrahls", "extrastole"], [0, 1, 2, 3])
-    ###Random mix the data:
-    TotalCSV = TotalCSV.sample(frac=1).reset_index(drop=True)
+TotalDataBalanced = normal
+TotalDataBalanced = TotalDataBalanced.append([murmur]*2, ignore_index=True)
+TotalDataBalanced = TotalDataBalanced.append([extrahls] * 10, ignore_index=True)
+TotalDataBalanced = TotalDataBalanced.append([extrastole] * 4, ignore_index=True)
+print(TotalDataBalanced.to_string())
 
-    print(TotalCSV.to_string())
+TotalDataBalanced['label'] = TotalDataBalanced['label'].replace(["normal", "murmur", "extrahls", "extrastole"],
+                                                                [0, 1, 2, 3])
+train, validation, test = np.split(TotalDataBalanced.sample(frac=1),
+                                   [int(0.70 * len(TotalDataBalanced)),
+                                    int(0.85 * len(TotalDataBalanced))])  # Split 75 15 15
 
-    TrainCSV = TotalCSV.iloc[:295, :]
-    TestCSV = TotalCSV.iloc[295:, :]
+print(TotalDataBalanced["label"].value_counts())
+print(len(train))
+print(len(validation))
+print(len(test))
+# print(train.to_string())
 
-    ###Generate new CSVs
-    ##divide data into TEST and Training
-    # TotalCSV.to_csv('set_ab.csv', index=False)
-    TrainCSV.to_csv('train.csv', index=False)
-    TestCSV.to_csv('test.csv', index=False)
+## Save CSVs
+train.to_csv('train.csv', index=False)
+validation.to_csv('validation.csv', index=False)
+test.to_csv('test.csv', index=False)
 
-    mel_spectrogram = torchaudio.transforms.MelSpectrogram(
-        sample_rate=SAMPLE_RATE,
-        n_fft=1024,
-        hop_length=512,
-        n_mels=64
-    )
+mel_spectrogram = torchaudio.transforms.MelSpectrogram(
+    sample_rate=SAMPLE_RATE,
+    n_fft=1024,
+    hop_length=512,
+    n_mels=64
+)
 
-    h_data = HeartDataset(TotalCSV,
-                          DATA_DIR,
-                          mel_spectrogram,
-                          SAMPLE_RATE,
-                          NUM_SAMPLES,
-                          device)
-    print(f"There are {len(h_data)} samples in the dataset.")
-    signal, label = h_data[0]
-    # print(signal.shape)
-    # print(label)
+h_data = HeartDataset(train,
+                      DATA_DIR,
+                      mel_spectrogram,
+                      SAMPLE_RATE,
+                      NUM_SAMPLES,
+                      "cpu")
+print(f"There are {len(h_data)} samples in the dataset.")
+signal, label = h_data[0]
+print(signal.shape)

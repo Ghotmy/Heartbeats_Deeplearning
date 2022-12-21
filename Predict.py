@@ -4,15 +4,9 @@ import pandas as pd
 
 from CNN import CNNNetwork
 from FNN import FNNNetwork
+from CNN_ResNet import CNN_ResNet
 from HeartDataset import HeartDataset
-from Train import DATA_DIR, SET_A_CSV, SET_B_CSV, SAMPLE_RATE, NUM_SAMPLES
-
-class_mapping = [
-    "normal",
-    "murmur",
-    "extrahls",
-    "extrastole"
-]
+from Train import DATA_DIR, SAMPLE_RATE, NUM_SAMPLES, class_mapping
 
 
 def predict(model, input, target, class_mapping):
@@ -28,19 +22,30 @@ def predict(model, input, target, class_mapping):
 
 
 if __name__ == "__main__":
-    # load back the model
-    cnn = CNNNetwork()
-    fnn = FNNNetwork(1 * 64 * 431, 256 * 2, 4)
-    state_dict = torch.load("cnn.pth")
-    cnn.load_state_dict(state_dict)
 
+    print("Train:\n1-FNN\n2-CNN\n3-CNN:ResNet\nChoose:")
+    network_type = int(input())
+    model = None
+    state_dict = None
+    if (network_type == 1):
+        model = FNNNetwork(1 * 64 * 431, 16, 4)
+        state_dict = torch.load("fnn.pth")
+    elif network_type == 2:
+        model = CNNNetwork()
+        state_dict = torch.load("cnn.pth")
+    elif network_type == 3:
+        model = CNN_ResNet().GetModel()
+        state_dict = torch.load("resnet.pth")
+    else:
+        model = FNNNetwork(1 * 64 * 431, 16, 4)
+        # model = CNNNetwork()
+        # model = CNN_ResNet().GetModel()
+        state_dict = torch.load("BestEpoch.pth")
+
+    model.load_state_dict(state_dict)
     TotalCSV = pd.read_csv("test.csv")
-    # TotalCSV = TotalCSV[(TotalCSV.label.notnull()) & (TotalCSV.label != "artifact")]
-    # TotalCSV['label'] = TotalCSV['label'].replace(["normal", "murmur", "extrahls", "extrastole"], [0, 1, 2, 3])
-    # TotalCSV = TotalCSV.sample(frac=1).reset_index(drop=True)
     print(TotalCSV.to_string())
 
-    # load urban sound dataset dataset
     mel_spectrogram = torchaudio.transforms.MelSpectrogram(
         sample_rate=SAMPLE_RATE,
         n_fft=1024,
@@ -61,7 +66,7 @@ if __name__ == "__main__":
         input_t, target = h_data[i][0], h_data[i][1]  # [batch size, num_channels, fr, time]
         input_t.unsqueeze_(0)
         # make an inference
-        predicted, expected = predict(cnn, input_t, target, class_mapping)
+        predicted, expected = predict(model, input_t, target, class_mapping)
         if predicted == expected:
             success += 1
         print(f"Predicted: '{predicted}', expected: '{expected}'->{success}")
