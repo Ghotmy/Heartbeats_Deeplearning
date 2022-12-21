@@ -9,13 +9,13 @@ SET_B_CSV = "/home/ghotmy/College/patterns/heart_beat_DeepLearning/heart-beat-da
 
 ##Combine CSV files:
 TotalCSV = pd.concat([pd.read_csv(SET_A_CSV), pd.read_csv(SET_B_CSV)], ignore_index=True)
-normal = TotalCSV[(TotalCSV['label'] == 'normal') & TotalCSV.sublabel.isnull()]
-murmur = TotalCSV[(TotalCSV['label'] == 'murmur') & TotalCSV.sublabel.isnull()]
-extrahls = TotalCSV[(TotalCSV['label'] == 'extrahls') & TotalCSV.sublabel.isnull()]
-extrastole = TotalCSV[(TotalCSV['label'] == 'extrastole') & TotalCSV.sublabel.isnull()]
+normal = TotalCSV[(TotalCSV['label'] == 'normal')]
+murmur = TotalCSV[(TotalCSV['label'] == 'murmur')]
+extrahls = TotalCSV[(TotalCSV['label'] == 'extrahls')]
+extrastole = TotalCSV[(TotalCSV['label'] == 'extrastole')]
 
-TotalDataBalanced = normal
-TotalDataBalanced = TotalDataBalanced.append([murmur]*2, ignore_index=True)
+TotalDataBalanced = normal  # .sample(300)
+TotalDataBalanced = TotalDataBalanced.append([murmur] * 2, ignore_index=True)
 TotalDataBalanced = TotalDataBalanced.append([extrahls] * 10, ignore_index=True)
 TotalDataBalanced = TotalDataBalanced.append([extrastole] * 4, ignore_index=True)
 print(TotalDataBalanced.to_string())
@@ -51,5 +51,6 @@ h_data = HeartDataset(train,
                       NUM_SAMPLES,
                       "cpu")
 print(f"There are {len(h_data)} samples in the dataset.")
-signal, label = h_data[0]
-print(signal.shape)
+for i in h_data:
+    signal, label = i
+    # print(signal.shape)

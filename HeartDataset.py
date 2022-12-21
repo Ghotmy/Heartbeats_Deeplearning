@@ -58,9 +58,12 @@ class HeartDataset(Dataset):
     def _get_audio_sample_path(self, index):
         path = os.path.join(self.audio_dir, self.annotations.iloc[index, 1])
         if self.annotations.iloc[index, 0] == 'b':
+            path = path.replace('Btraining_murmur_Btraining', 'murmur')
+            path = path.replace('Btraining_normal_Btraining', 'normal')
             path = path.replace('Btraining_extrastole', 'extrastole_')
             path = path.replace('Btraining_murmur', 'murmur_')
             path = path.replace('Btraining_normal', 'normal_')
+
         # print(f'PATH OF AUDIO:{path}')
         return path
 

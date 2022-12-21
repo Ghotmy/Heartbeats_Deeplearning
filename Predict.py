@@ -37,9 +37,9 @@ if __name__ == "__main__":
         model = CNN_ResNet().GetModel()
         state_dict = torch.load("resnet.pth")
     else:
-        model = FNNNetwork(1 * 64 * 431, 16, 4)
+        # model = FNNNetwork(1 * 64 * 431, 16, 4)
         # model = CNNNetwork()
-        # model = CNN_ResNet().GetModel()
+        model = CNN_ResNet().GetModel()
         state_dict = torch.load("BestEpoch.pth")
 
     model.load_state_dict(state_dict)

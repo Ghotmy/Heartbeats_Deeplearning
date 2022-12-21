@@ -11,11 +11,11 @@ from FNN import FNNNetwork
 from CNN_ResNet import CNN_ResNet
 
 DATA_DIR = "/home/ghotmy/College/patterns/heart_beat_DeepLearning/heart-beat-dataset"
-BATCH_SIZE = 128
+BATCH_SIZE = 200
 EPOCHS = 100
 LEARNING_RATE = 0.001
 SAMPLE_RATE = 22050
-NUM_SAMPLES = 220500
+NUM_SAMPLES = 110250
 best_accuracy = 0
 
 class_mapping = [
