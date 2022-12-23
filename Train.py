@@ -1,6 +1,7 @@
 import torch
 import torchaudio
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from torch import nn
 from torch.utils.data import DataLoader
@@ -11,12 +12,15 @@ from FNN import FNNNetwork
 from CNN_ResNet import CNN_ResNet
 
 DATA_DIR = "/home/ghotmy/College/patterns/heart_beat_DeepLearning/heart-beat-dataset"
-BATCH_SIZE = 200
+BATCH_SIZE = 100
 EPOCHS = 100
 LEARNING_RATE = 0.001
-SAMPLE_RATE = 22050
-NUM_SAMPLES = 110250
+SAMPLE_RATE = 44100
+NUM_SAMPLES = 220500
 best_accuracy = 0
+best_epoch = 0
+epoch = 0
+train_loss, validation_loss, validation_accuracy = list(), list(), list()
 
 class_mapping = [
     "normal",
@@ -38,24 +42,17 @@ def calculate_accuracy(predicted, true_labels):
             accuracy += 1
     return accuracy
 
-
-def predict(model, input, target, class_mapping):
-    model.eval()
-    with torch.no_grad():
-        predictions = model(input)
-        print(f'Preditions:{predictions}')
-        # Tensor (1, 10) -> [ [0.1, 0.01, ..., 0.6] ]
-        predicted_index = predictions[0].argmax(0)
-        predicted = class_mapping[predicted_index]
-        expected = class_mapping[target]
-    return predicted, expected
-
-
 def train_single_epoch(model, train_data_loader, validation_data_loader, loss_fn, optimiser, device):
     # Training model
     model.train()
     loss = 0
     global best_accuracy
+    global best_epoch
+    global LEARNING_RATE
+    if epoch % 25 == 0:
+        LEARNING_RATE = LEARNING_RATE / 10
+        print(f'Learning Rate = {LEARNING_RATE}')
+        optimiser.param_groups[0]['lr'] = LEARNING_RATE
     for input_t, target in train_data_loader:
         input_t, target = input_t.to(device), target.to(device)
 
@@ -68,6 +65,7 @@ def train_single_epoch(model, train_data_loader, validation_data_loader, loss_fn
         loss.backward()
         optimiser.step()
     print(f"Train loss: {loss.item()}")
+    train_loss.append(loss.item())
 
     # Testing model on validation data
     model.eval()
@@ -83,19 +81,44 @@ def train_single_epoch(model, train_data_loader, validation_data_loader, loss_fn
             loss = loss_fn(predictions, target)
     total_accuracy /= len(val_data)
     print(f"Validation loss: {loss.item()}")
-    print(f'Validation Accuracy : {total_accuracy*100}%')
+    print(f'Validation Accuracy : {total_accuracy * 100}%')
+    validation_loss.append(loss.item())
+    validation_accuracy.append(total_accuracy)
     if total_accuracy > best_accuracy:
         torch.save(model.state_dict(), 'BestEpoch.pth')
-        print('\033[91m'+'New Weights are Saved !! '*3 + '\033[0m')
+        best_epoch = epoch
+        print('\033[91m' + 'New Weights are Saved !! ' * 3 + '\033[0m')
         best_accuracy = total_accuracy
 
 
 def train(model, train_data_loader, validation_data_loader, loss_fn, optimiser, device, epochs):
+    global epoch
     for i in range(epochs):
         print(f"Epoch {i + 1}")
+        epoch = i + 1
         train_single_epoch(model, train_data_loader, validation_data_loader, loss_fn, optimiser, device)
         print("---------------------------")
     print("Finished training")
+
+
+def plot_results(title):
+    x = list(range(1, len(train_loss) + 1))
+    plt.title('Train & Validation loss ' + title)
+    plt.xlabel('epochs')
+    plt.ylabel('loss')
+    plt.plot(x, train_loss, )
+    plt.plot(x, validation_loss)
+    plt.legend(['Train loss', 'Validation loss'])
+    plt.vlines(best_epoch, min(min(train_loss), min(validation_loss)), max(max(train_loss), max(validation_loss)),
+               color='red')
+    plt.show()
+    plt.title('Validation Accuracy ' + title)
+    plt.xlabel('epochs')
+    plt.ylabel('accuracy')
+    plt.plot(x, validation_accuracy)
+    plt.vlines(best_epoch, min(min(validation_accuracy), min(validation_accuracy)),
+               max(max(validation_accuracy), max(validation_accuracy)), color='red')
+    plt.show()
 
 
 if __name__ == "__main__":
@@ -141,20 +164,23 @@ if __name__ == "__main__":
     loss_fn = nn.CrossEntropyLoss()
 
     if network_type == 1:
-        fnn = FNNNetwork(1 * 64 * 431, 16, 4).to(device)
+        fnn = FNNNetwork(1 * 64 * 431, 32, 4).to(device)
         optimiser = torch.optim.Adam(fnn.parameters(), lr=LEARNING_RATE)
         train(fnn, train_dataloader, validation_dataloader, loss_fn, optimiser, device, EPOCHS)
         torch.save(fnn.state_dict(), "fnn.pth")
         print("Trained FNN saved at fnn.pth")
+        plot_results("FNN")
     elif network_type == 2:
         cnn = CNNNetwork().to(device)
         optimiser = torch.optim.Adam(cnn.parameters(), lr=LEARNING_RATE)
         train(cnn, train_dataloader, validation_dataloader, loss_fn, optimiser, device, EPOCHS)
         torch.save(cnn.state_dict(), "cnn.pth")
         print("Trained CNN saved at cnn.pth")
+        plot_results("CNN")
     else:
         resnet = CNN_ResNet().GetModel().to(device)
         optimiser = torch.optim.Adam(resnet.parameters(), lr=LEARNING_RATE)
         train(resnet, train_dataloader, validation_dataloader, loss_fn, optimiser, device, EPOCHS)
         torch.save(resnet.state_dict(), "resnet.pth")
         print("Trained CNN_ResNet saved at resnet.pth")
+        plot_results("ResNet")
