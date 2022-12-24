@@ -9,7 +9,7 @@ SET_B_CSV = "/home/ghotmy/College/patterns/heart_beat_DeepLearning/heart-beat-da
 
 ##Combine CSV files:
 TotalCSV = pd.concat([pd.read_csv(SET_A_CSV), pd.read_csv(SET_B_CSV)], ignore_index=True)
-TotalCSV = TotalCSV[(TotalCSV.label.notnull()) & (TotalCSV.label != "artifact")]
+TotalCSV = TotalCSV[(TotalCSV.label.notnull()) & (TotalCSV.label != "artifact") & (TotalCSV.sublabel.isnull())]
 TotalCSV['label'] = TotalCSV['label'].replace(["normal", "murmur", "extrahls", "extrastole"],
                                               [0, 1, 2, 3])
 
@@ -58,6 +58,8 @@ h_data = HeartDataset(train_balanced,
                       NUM_SAMPLES,
                       "cpu")
 print(f"There are {len(h_data)} samples in the dataset.")
+shosho = None
 for i in h_data:
     signal, label = i
-    print(signal.shape)
+    shosho = signal.shape
+print(shosho)

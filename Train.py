@@ -10,13 +10,15 @@ from HeartDataset import HeartDataset
 from CNN import CNNNetwork
 from FNN import FNNNetwork
 from CNN_ResNet import CNN_ResNet
+from VGG import VGGNetwork
+from RNN import RNN
 
 DATA_DIR = "/home/ghotmy/College/patterns/heart_beat_DeepLearning/heart-beat-dataset"
-BATCH_SIZE = 100
+BATCH_SIZE = 32
 EPOCHS = 100
 LEARNING_RATE = 0.001
 SAMPLE_RATE = 44100
-NUM_SAMPLES = 220500
+NUM_SAMPLES = 441000
 best_accuracy = 0
 best_epoch = 0
 epoch = 0
@@ -42,6 +44,7 @@ def calculate_accuracy(predicted, true_labels):
             accuracy += 1
     return accuracy
 
+
 def train_single_epoch(model, train_data_loader, validation_data_loader, loss_fn, optimiser, device):
     # Training model
     model.train()
@@ -49,8 +52,8 @@ def train_single_epoch(model, train_data_loader, validation_data_loader, loss_fn
     global best_accuracy
     global best_epoch
     global LEARNING_RATE
-    if epoch % 25 == 0:
-        LEARNING_RATE = LEARNING_RATE / 10
+    if epoch % 20 == 0:
+        LEARNING_RATE = LEARNING_RATE / 2
         print(f'Learning Rate = {LEARNING_RATE}')
         optimiser.param_groups[0]['lr'] = LEARNING_RATE
     for input_t, target in train_data_loader:
@@ -111,6 +114,7 @@ def plot_results(title):
     plt.legend(['Train loss', 'Validation loss'])
     plt.vlines(best_epoch, min(min(train_loss), min(validation_loss)), max(max(train_loss), max(validation_loss)),
                color='red')
+    plt.ylim([0, 3])
     plt.show()
     plt.title('Validation Accuracy ' + title)
     plt.xlabel('epochs')
@@ -123,7 +127,7 @@ def plot_results(title):
 
 if __name__ == "__main__":
 
-    print("Train:\n1-FNN\n2-CNN\n3-CNN:ResNet\nChoose:")
+    print("Train:\n1-FNN\n2-CNN\n3-CNN:ResNet\n4-CNN:VGG\n5-RNN:LSTM\nChoose:\n")
     network_type = int(input())
 
     if torch.cuda.is_available():
@@ -177,10 +181,24 @@ if __name__ == "__main__":
         torch.save(cnn.state_dict(), "cnn.pth")
         print("Trained CNN saved at cnn.pth")
         plot_results("CNN")
-    else:
+    elif network_type == 3:
         resnet = CNN_ResNet().GetModel().to(device)
         optimiser = torch.optim.Adam(resnet.parameters(), lr=LEARNING_RATE)
         train(resnet, train_dataloader, validation_dataloader, loss_fn, optimiser, device, EPOCHS)
         torch.save(resnet.state_dict(), "resnet.pth")
         print("Trained CNN_ResNet saved at resnet.pth")
         plot_results("ResNet")
+    elif network_type == 4:
+        vgg = VGGNetwork().to(device)
+        optimiser = torch.optim.Adam(vgg.parameters(), lr=LEARNING_RATE)
+        train(vgg, train_dataloader, validation_dataloader, loss_fn, optimiser, device, EPOCHS)
+        torch.save(vgg.state_dict(), "vgg.pth")
+        print("Trained CNN_ResNet saved at vgg.pth")
+        plot_results("VGG")
+    elif network_type == 5:
+        rnn = RNN().to(device)
+        optimiser = torch.optim.Adam(rnn.parameters(), lr=LEARNING_RATE)
+        train(rnn, train_dataloader, validation_dataloader, loss_fn, optimiser, device, EPOCHS)
+        torch.save(rnn.state_dict(), "rnn.pth")
+        print("Trained CNN_ResNet saved at rnn.pth")
+        plot_results("RNN")

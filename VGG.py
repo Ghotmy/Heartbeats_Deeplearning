@@ -2,11 +2,10 @@ from torch import nn
 from torchsummary import summary
 
 
-class CNNNetwork(nn.Module):
+class VGGNetwork(nn.Module):
 
     def __init__(self):
         super().__init__()
-        # 4 conv blocks / flatten / linear / softmax
         self.conv1 = nn.Sequential(
             nn.Conv2d(
                 in_channels=1,
@@ -15,6 +14,7 @@ class CNNNetwork(nn.Module):
                 stride=1,
                 padding=2
             ),
+            # nn.BatchNorm2d(16),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2)
         )
@@ -26,6 +26,7 @@ class CNNNetwork(nn.Module):
                 stride=1,
                 padding=2
             ),
+            # nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2)
         )
@@ -37,6 +38,7 @@ class CNNNetwork(nn.Module):
                 stride=1,
                 padding=2
             ),
+            # nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2)
         )
@@ -48,25 +50,25 @@ class CNNNetwork(nn.Module):
                 stride=1,
                 padding=2
             ),
+            # nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2)
         )
         self.flatten = nn.Flatten()
-        self.linear = nn.Linear(32 * 17 * 109, 4)
-        self.softmax = nn.Softmax(dim=1)
+        self.dropout = nn.Dropout(0.5)
+        self.linear = nn.Linear(35200, 4)
 
     def forward(self, input_data):
         x = self.conv1(input_data)
         x = self.conv2(x)
-        # x = self.conv3(x)
-        # x = self.conv4(x)
+        x = self.conv3(x)
+        x = self.conv4(x)
         x = self.flatten(x)
-        logits = self.linear(x)
-        predictions = self.softmax(logits)
-        return predictions
+        # x = self.dropout(x)
+        x = self.linear(x)
+        return x
 
 
-if __name__ == "__main__":
-    cnn = CNNNetwork()
-    summary(cnn.cuda(), (1, 64, 431))
-
+if __name__ == '__main__':
+    vgg = VGGNetwork().to("cuda")
+    summary(vgg, (1, 64, 862))
