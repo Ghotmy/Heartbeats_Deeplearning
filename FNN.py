@@ -22,5 +22,5 @@ class FNNNetwork(nn.Module):
 
 
 if __name__ == "__main__":
-    fnn = FNNNetwork(1 * 64 * 431, 256 * 2, 4)
-    summary(fnn.cuda(), (1, 64, 431))
+    fnn = FNNNetwork(1 * 64 * 862, 256 * 2, 4)
+    summary(fnn.cuda(), (1, 64, 862))

@@ -20,7 +20,6 @@ def predict(model, input, target, class_mapping):
     with torch.no_grad():
         predictions = model(input)
         print(f'Preditions:{predictions}')
-        # Tensor (1, 10) -> [ [0.1, 0.01, ..., 0.6] ]
         predicted_index = predictions[0].argmax(0)
         predicted = class_mapping[predicted_index]
         expected = class_mapping[target]
@@ -34,7 +33,7 @@ if __name__ == "__main__":
     model = None
     state_dict = None
     if (network_type == 1):
-        model = FNNNetwork(1 * 64 * 431, 32, 4)
+        model = FNNNetwork(1 * 64 * 862, 32, 4)
         state_dict = torch.load("fnn.pth")
     elif network_type == 2:
         model = CNNNetwork()

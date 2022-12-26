@@ -87,7 +87,7 @@ def train_single_epoch(model, train_data_loader, validation_data_loader, loss_fn
     print(f'Validation Accuracy : {total_accuracy * 100}%')
     validation_loss.append(loss.item())
     validation_accuracy.append(total_accuracy)
-    if total_accuracy > best_accuracy:
+    if total_accuracy >= best_accuracy:
         torch.save(model.state_dict(), 'BestEpoch.pth')
         best_epoch = epoch
         print('\033[91m' + 'New Weights are Saved !! ' * 3 + '\033[0m')
@@ -165,10 +165,13 @@ if __name__ == "__main__":
     train_dataloader = create_data_loader(h_data, BATCH_SIZE)
     validation_dataloader = create_data_loader(val_data, BATCH_SIZE)
 
-    loss_fn = nn.CrossEntropyLoss()
+    nSamples = [160, 69, 35, 13]
+    normedWeights = [1 - (x / sum(nSamples)) for x in nSamples]
+    normedWeights = torch.FloatTensor(normedWeights).to(device)
+    loss_fn = nn.CrossEntropyLoss(normedWeights)
 
     if network_type == 1:
-        fnn = FNNNetwork(1 * 64 * 431, 32, 4).to(device)
+        fnn = FNNNetwork(1 * 64 * 862, 32, 4).to(device)
         optimiser = torch.optim.Adam(fnn.parameters(), lr=LEARNING_RATE)
         train(fnn, train_dataloader, validation_dataloader, loss_fn, optimiser, device, EPOCHS)
         torch.save(fnn.state_dict(), "fnn.pth")
